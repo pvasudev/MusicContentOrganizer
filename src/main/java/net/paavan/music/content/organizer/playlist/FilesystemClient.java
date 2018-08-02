@@ -19,6 +19,11 @@ public class FilesystemClient {
     }
 
     public void writePlaylistFile(final Path playlistFile, final List<Path> mp3Files) throws IOException {
+        if (mp3Files.isEmpty()) {
+            System.out.println("Skipping empty file: " + playlistFile);
+            return;
+        }
+
         byte[] bytesToWrite = mp3Files.stream()
                 .map(path -> playlistFile.getParent().relativize(path))
                 .map(Path::toString)
