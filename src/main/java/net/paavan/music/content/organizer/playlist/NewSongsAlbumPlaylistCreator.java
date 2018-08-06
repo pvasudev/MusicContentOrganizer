@@ -17,7 +17,8 @@ public class NewSongsAlbumPlaylistCreator implements PlaylistCreator {
     private final FilesystemClient filesystemClient;
 
     @Inject
-    public NewSongsAlbumPlaylistCreator(@Named("new.songs.directory") final String newSongsDirectory, final FilesystemClient filesystemClient) {
+    public NewSongsAlbumPlaylistCreator(@Named("new.songs.directory") final String newSongsDirectory,
+                                        final FilesystemClient filesystemClient) {
         this.newSongsDirectory = newSongsDirectory;
         this.filesystemClient = filesystemClient;
     }
