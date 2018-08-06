@@ -92,10 +92,16 @@ public class DownloadExecutor {
                 }
             }
 
+            Path filePath = Paths.get(albumPath.toString() + "/" + downloadTask.getFileName());
+
+            if (Files.exists(filePath)) {
+                System.out.println(String.format("Skipping %s --- %s ", downloadTask.getAlbumName(), downloadTask.getFileName()));
+                return;
+            }
+
             try {
                 System.out.println(String.format("Downloading %s --- %s ", downloadTask.getAlbumName(), downloadTask.getFileName()));
-                FileUtils.copyURLToFile(new URL(downloadTask.getSourceUrl()),
-                        new File(albumPath.toString() + "/" + downloadTask.getFileName()));
+                FileUtils.copyURLToFile(new URL(downloadTask.getSourceUrl()), new File(filePath.toString()));
             } catch (IOException e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);
