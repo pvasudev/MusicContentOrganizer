@@ -1,9 +1,8 @@
 package net.paavan.music.content.organizer.downloader;
 
-import net.paavan.music.content.organizer.downloader.beans.AvailableAlbum;
 import net.paavan.music.content.organizer.downloader.beans.AlbumSong;
+import net.paavan.music.content.organizer.downloader.beans.AvailableAlbum;
 import net.paavan.music.content.organizer.downloader.fmw11.Fmw11Client;
-import net.paavan.music.content.organizer.downloader.fmw11.Fmw11CurrentYearAlbumDownloader;
 import org.apache.commons.io.FileUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
