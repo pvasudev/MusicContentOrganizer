@@ -33,7 +33,7 @@ public class FilesystemClient {
         if (Files.exists(playlistFile)) {
             byte[] existingFileBytes = Files.readAllBytes(playlistFile);
             if (Arrays.equals(bytesToWrite, existingFileBytes)) {
-                System.out.println("Skipping file: " + playlistFile);
+//                System.out.println("Skipping file: " + playlistFile);
                 return;
             }
         }

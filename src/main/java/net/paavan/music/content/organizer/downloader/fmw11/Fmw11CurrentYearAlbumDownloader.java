@@ -50,8 +50,8 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                 .filter(availableAlbum -> !existingAlbums.contains(availableAlbum.getDisplayTitle()))
                 .collect(Collectors.toList());
 
-
         Path destinationNewSongsCollectionPath = getDestinationNewSongsCollectionPath();
+        System.out.println("Download directory: " + destinationNewSongsCollectionPath.toString());
 
         List<DownloadTask> downloadTasks = albumsToDownload.stream()
                 .map(fmw11Client::getDownloadableAlbum)
@@ -63,6 +63,9 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
 
         downloadExecutor.execute(downloadTasks);
     }
+
+    // --------------
+    // Helper Methods
 
     private boolean isAlbumYearCurrent(final AvailableAlbum availableAlbum) {
         return availableAlbum.getYear() != null && availableAlbum.getYear().equals(Calendar.getInstance().get(Calendar.YEAR));
