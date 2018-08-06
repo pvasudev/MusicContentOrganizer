@@ -11,6 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.OptionalDouble;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -27,9 +29,8 @@ public class DownloadExecutor {
 
     public void execute(final List<DownloadTask> downloadTasks) {
         long startTime = System.currentTimeMillis();
-        downloadTasks.forEach(downloadTask -> executorService.submit(new DownloadRunner(downloadTask)));
-
-        System.out.println("Current time: " + System.currentTimeMillis());
+        ConcurrentLinkedQueue<Long> timePerTask = new ConcurrentLinkedQueue<>();
+        downloadTasks.forEach(downloadTask -> executorService.submit(new DownloadRunner(downloadTask, timePerTask)));
 
         try {
             executorService.shutdown();
@@ -47,15 +48,21 @@ public class DownloadExecutor {
             }
         }
 
-        System.out.println("End Current time: " + System.currentTimeMillis());
-        System.out.println("Diff time: " + (System.currentTimeMillis() - startTime));
+        OptionalDouble average = timePerTask.stream()
+                .mapToLong(value -> value)
+                .average();
+        System.out.println(String.format("Total download time: %d average download time: %.02f",
+                System.currentTimeMillis() - startTime,
+                average.isPresent() ? average.getAsDouble() : 0));
     }
 
     private class DownloadRunner implements Runnable {
-        private DownloadTask downloadTask;
+        private final DownloadTask downloadTask;
+        private final ConcurrentLinkedQueue<Long> timePerTask;
 
-        DownloadRunner(DownloadTask downloadTask) {
+        DownloadRunner(final DownloadTask downloadTask, final ConcurrentLinkedQueue<Long> timePerTask) {
             this.downloadTask = downloadTask;
+            this.timePerTask = timePerTask;
         }
 
         @Override
@@ -86,14 +93,15 @@ public class DownloadExecutor {
             }
 
             try {
-                System.out.println("Downloading file: " + downloadTask.getFileName() + " from album " + downloadTask.getAlbumName());
-                FileUtils.copyURLToFile(new URL(downloadTask.getSourceUrl()), new File(albumPath.toString() + "/" + downloadTask.getFileName()));
+                System.out.println(String.format("Downloading %s --- %s ", downloadTask.getAlbumName(), downloadTask.getFileName()));
+                FileUtils.copyURLToFile(new URL(downloadTask.getSourceUrl()),
+                        new File(albumPath.toString() + "/" + downloadTask.getFileName()));
             } catch (IOException e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);
             }
 
-            System.out.println("Task total time: " + (System.currentTimeMillis() - taskStartTime));
+            timePerTask.add(System.currentTimeMillis() - taskStartTime);
         }
     }
 }
