@@ -72,7 +72,7 @@ public class Fmw11Client {
         }
         Element downloadBox = doc.selectFirst("#DownloadBox");
         Element songLink = downloadBox.selectFirst("a");
-        return songLink.attr("href");
+        return songLink.attr("href").replace(" ", "%20");
     }
 
     private String getNameFromHtml(final String html) {

@@ -11,6 +11,7 @@ import java.nio.file.Path;
 @ToString
 public class DownloadTask {
     private final String sourceUrl;
-    private final Path destinationDirectory;
+    private final Path destinationCollectionPath;
     private final String albumName;
+    private final String fileName;
 }

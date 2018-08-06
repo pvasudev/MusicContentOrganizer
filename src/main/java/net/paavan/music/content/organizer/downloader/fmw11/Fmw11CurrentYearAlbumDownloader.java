@@ -4,16 +4,19 @@ import net.paavan.music.content.organizer.downloader.AlbumDownloader;
 import net.paavan.music.content.organizer.downloader.beans.AvailableAlbum;
 import net.paavan.music.content.organizer.downloader.beans.DownloadTask;
 import net.paavan.music.content.organizer.downloader.beans.DownloadableAlbum;
-import net.paavan.music.content.organizer.playlist.FilesystemClient;
+import net.paavan.music.content.organizer.downloader.executor.DownloadExecutor;
+import org.apache.commons.io.FilenameUtils;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -23,42 +26,45 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
     private final String allSongsDirectory;
     private final String newSongsDirectory;
     private final Fmw11Client fmw11Client;
-    private final FilesystemClient filesystemClient;
+    private final DownloadExecutor downloadExecutor;
 
     @Inject
     public Fmw11CurrentYearAlbumDownloader(@Named("all.songs.directory") final String allSongsDirectory,
                                            @Named("new.songs.directory") final String newSongsDirectory,
-                                           final Fmw11Client fmw11Client, final FilesystemClient filesystemClient) {
+                                           final Fmw11Client fmw11Client, final DownloadExecutor downloadExecutor) {
         this.allSongsDirectory = allSongsDirectory;
         this.newSongsDirectory = newSongsDirectory;
         this.fmw11Client = fmw11Client;
-        this.filesystemClient = filesystemClient;
+        this.downloadExecutor = downloadExecutor;
     }
 
     @Override
     public void download() {
         List<AvailableAlbum> availableAlbums = fmw11Client.getAvailableAlbums().stream()
-                .filter(this::shouldDownload)
+                .filter(this::isAlbumYearCurrent)
                 .collect(Collectors.toList());
 
         List<String> existingAlbums = getExistingAlbums();
+
         List<AvailableAlbum> albumsToDownload = availableAlbums.stream()
-//                .filter(availableAlbum -> !existingAlbums.stream()
-//                        .filter(existingAlbumName -> existingAlbumName.contains(availableAlbum.getTitle()))
-//                        .findAny()
-//                        .isPresent()
-//                )
                 .filter(availableAlbum -> !existingAlbums.contains(availableAlbum.getDisplayTitle()))
                 .collect(Collectors.toList());
-        System.out.println(albumsToDownload.stream().map(AvailableAlbum::toString).collect(Collectors.joining("\n")));
-        System.out.println(getDownloadPath().toString());
 
-        albumsToDownload.stream()
+
+        Path destinationNewSongsCollectionPath = getDestinationNewSongsCollectionPath();
+
+        List<DownloadTask> downloadTasks = albumsToDownload.stream()
                 .map(fmw11Client::getDownloadableAlbum)
-                ;
+                .map(downloadableAlbum -> getDownloadTasksForDownloadableAlbum(downloadableAlbum, destinationNewSongsCollectionPath))
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+
+        System.out.println(String.format("Found %d albums and %d songs to download", albumsToDownload.size(), downloadTasks.size()));
+
+        downloadExecutor.execute(downloadTasks);
     }
 
-    private boolean shouldDownload(final AvailableAlbum availableAlbum) {
+    private boolean isAlbumYearCurrent(final AvailableAlbum availableAlbum) {
         return availableAlbum.getYear() != null && availableAlbum.getYear().equals(Calendar.getInstance().get(Calendar.YEAR));
     }
 
@@ -78,7 +84,7 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
         return existingAlbums;
     }
 
-    private Path getDownloadPath() {
+    private Path getDestinationNewSongsCollectionPath() {
         List<String> albumCollectionDirectoryNames;
         try (Stream<Path> paths = Files.list(Paths.get(newSongsDirectory))) {
             albumCollectionDirectoryNames = paths.filter(Files::isDirectory)
@@ -108,12 +114,14 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
         return Paths.get(newSongsDirectory + "/" + nextDirectoryIndex);
     }
 
-    private List<DownloadTask> getDownloadTasksForDownloadableAlbum(final DownloadableAlbum downloadableAlbum) {
+    private List<DownloadTask> getDownloadTasksForDownloadableAlbum(final DownloadableAlbum downloadableAlbum,
+                                                                    final Path destinationNewSongsCollectionPath) {
         return downloadableAlbum.getSongs().stream()
                 .map(albumSong -> DownloadTask.builder()
                         .sourceUrl(albumSong.getDownloadUrl())
-                        .destinationDirectory(null)
+                        .destinationCollectionPath(destinationNewSongsCollectionPath)
                         .albumName(downloadableAlbum.getDisplayTitle())
+                        .fileName(FilenameUtils.getName(URI.create(albumSong.getDownloadUrl()).getPath()))
                         .build())
                 .collect(Collectors.toList());
     }
