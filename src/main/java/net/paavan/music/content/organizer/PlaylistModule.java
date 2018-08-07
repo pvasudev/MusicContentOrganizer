@@ -2,7 +2,12 @@ package net.paavan.music.content.organizer;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
-import net.paavan.music.content.organizer.playlist.*;
+import net.paavan.music.content.organizer.playlist.NewSongsAlbumCollectionPlaylistCreator;
+import net.paavan.music.content.organizer.playlist.NewSongsAlbumPlaylistCreator;
+import net.paavan.music.content.organizer.playlist.PlaylistCreator;
+import net.paavan.music.content.organizer.playlist.SelectedAlbumPlaylistCreator;
+import net.paavan.music.content.organizer.playlist.SelectedAllPlaylistCreator;
+import net.paavan.music.content.organizer.playlist.SelectedLastNPlaylistCreator;
 
 public class PlaylistModule extends AbstractModule {
     @Override
