@@ -5,10 +5,12 @@ import net.paavan.music.content.organizer.downloader.beans.AvailableAlbum;
 import net.paavan.music.content.organizer.downloader.beans.DownloadTask;
 import net.paavan.music.content.organizer.downloader.beans.DownloadableAlbum;
 import net.paavan.music.content.organizer.downloader.executor.DownloadExecutor;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -25,15 +27,18 @@ import java.util.stream.Stream;
 public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
     private final String allSongsDirectory;
     private final String newSongsDirectory;
+    private final String transferSongsDirectory;
     private final Fmw11Client fmw11Client;
     private final DownloadExecutor downloadExecutor;
 
     @Inject
     public Fmw11CurrentYearAlbumDownloader(@Named("all.songs.directory") final String allSongsDirectory,
                                            @Named("new.songs.directory") final String newSongsDirectory,
+                                           @Named("transfer.songs.directory") final String transferSongsDirectory,
                                            final Fmw11Client fmw11Client, final DownloadExecutor downloadExecutor) {
         this.allSongsDirectory = allSongsDirectory;
         this.newSongsDirectory = newSongsDirectory;
+        this.transferSongsDirectory = transferSongsDirectory;
         this.fmw11Client = fmw11Client;
         this.downloadExecutor = downloadExecutor;
     }
@@ -50,6 +55,11 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                 .filter(availableAlbum -> !existingAlbums.contains(availableAlbum.getDisplayTitle()))
                 .collect(Collectors.toList());
 
+        if (albumsToDownload.isEmpty()) {
+            System.out.println("No new albums");
+            return;
+        }
+
         Path destinationNewSongsCollectionPath = getDestinationNewSongsCollectionPath();
         System.out.println("Download directory: " + destinationNewSongsCollectionPath.toString());
 
@@ -62,6 +72,9 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
         System.out.println(String.format("Found %d albums and %d songs to download", albumsToDownload.size(), downloadTasks.size()));
 
         downloadExecutor.execute(downloadTasks);
+
+        copyFiles(destinationNewSongsCollectionPath, Paths.get(transferSongsDirectory));
+        copyFiles(destinationNewSongsCollectionPath, Paths.get(allSongsDirectory));
     }
 
     // --------------
@@ -127,5 +140,14 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                         .fileName(FilenameUtils.getName(URI.create(albumSong.getDownloadUrl()).getPath()))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private void copyFiles(Path sourcePath, Path destinationPath) {
+        try {
+            FileUtils.copyDirectory(new File(sourcePath.toString()), new File(destinationPath.toString()));
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
     }
 }
