@@ -8,6 +8,7 @@ import net.paavan.music.content.organizer.playlist.PlaylistCreator;
 import net.paavan.music.content.organizer.playlist.SelectedAlbumPlaylistCreator;
 import net.paavan.music.content.organizer.playlist.SelectedAllPlaylistCreator;
 import net.paavan.music.content.organizer.playlist.SelectedLastNPlaylistCreator;
+import net.paavan.music.content.organizer.playlist.SelectedReverse100PlaylistCreator;
 
 public class PlaylistModule extends AbstractModule {
     @Override
@@ -18,5 +19,6 @@ public class PlaylistModule extends AbstractModule {
         uriBinder.addBinding().to(SelectedAlbumPlaylistCreator.class);
         uriBinder.addBinding().to(SelectedAllPlaylistCreator.class);
         uriBinder.addBinding().to(SelectedLastNPlaylistCreator.class);
+        uriBinder.addBinding().to(SelectedReverse100PlaylistCreator.class);
     }
 }
