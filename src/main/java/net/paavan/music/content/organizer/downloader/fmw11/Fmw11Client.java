@@ -16,9 +16,13 @@ public class Fmw11Client {
     private static final String MOVIES_PAGE_URL = "http://www.apunkabollywood.com/browser/category/view/347/movies";
 
     public List<AvailableAlbum> getAvailableAlbums() {
+        return getAvailableAlbums(MOVIES_PAGE_URL);
+    }
+
+    public List<AvailableAlbum> getAvailableAlbums(final String pageUrl) {
         Document doc = null;
         try {
-            doc = Jsoup.connect(MOVIES_PAGE_URL).get();
+            doc = Jsoup.connect(pageUrl).get();
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -44,7 +48,31 @@ public class Fmw11Client {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+
         Element movieTable = doc.selectFirst("#entries > table");
+        if (movieTable == null) {
+            List<AvailableAlbum> availableAlbums = getAvailableAlbums(availableAlbum.getUrl());
+            if (availableAlbums.isEmpty()) {
+                throw new RuntimeException("Unable to find album for " + availableAlbum);
+            }
+            if (availableAlbums.size() > 1) {
+                throw new RuntimeException("Multiple sub-albums found for " + availableAlbum);
+            }
+
+            try {
+                // Only retrieving the first nested album
+                // TODO: Create sub-albums if size > 1
+                doc = Jsoup.connect(availableAlbums.get(0).getUrl()).get();
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+
+            movieTable = doc.selectFirst("#entries > table");
+            if (movieTable == null) {
+                throw new RuntimeException("Unable to parse album " + availableAlbum);
+            }
+        }
         Elements songs = movieTable.select("tr > td:nth-child(2) > a");
 
         List<AlbumSong> albumSongs = songs.stream()
