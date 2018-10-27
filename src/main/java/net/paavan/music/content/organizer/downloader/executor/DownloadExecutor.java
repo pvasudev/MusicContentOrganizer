@@ -1,21 +1,19 @@
 package net.paavan.music.content.organizer.downloader.executor;
 
+import net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult;
 import net.paavan.music.content.organizer.downloader.beans.DownloadTask;
-import org.apache.commons.io.FileUtils;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.OptionalDouble;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult.DownloadStatus.FAILURE;
+import static net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult.DownloadStatus.SUCCESSFUL;
 
 public class DownloadExecutor {
     private static final int THREAD_COUNT = 10;
@@ -27,10 +25,12 @@ public class DownloadExecutor {
         executorService = Executors.newFixedThreadPool(THREAD_COUNT);
     }
 
-    public void execute(final List<DownloadTask> downloadTasks) {
+    public boolean execute(final List<DownloadTask> downloadTasks) {
         long startTime = System.currentTimeMillis();
-        ConcurrentLinkedQueue<Long> timePerTask = new ConcurrentLinkedQueue<>();
-        downloadTasks.forEach(downloadTask -> executorService.submit(new DownloadRunner(downloadTask, timePerTask)));
+        List<Future<DownloadExecutionResult>> futures = downloadTasks.stream()
+                .map(downloadTask -> new DownloadRunner(downloadTask))
+                .map(downloadRunner -> executorService.submit(downloadRunner))
+                .collect(Collectors.toList());
 
         try {
             executorService.shutdown();
@@ -48,66 +48,43 @@ public class DownloadExecutor {
             }
         }
 
-        OptionalDouble average = timePerTask.stream()
-                .mapToLong(value -> value)
-                .average();
-        System.out.println(String.format("Total download time: %d average download time: %.02f",
-                System.currentTimeMillis() - startTime,
-                average.isPresent() ? average.getAsDouble() : 0));
+        List<DownloadExecutionResult> results = getDownloadExecutionResults(futures);
+        printDownloadStats(results, System.currentTimeMillis() - startTime);
+
+        boolean allTasksWereSuccessful = !results.stream()
+                .map(DownloadExecutionResult::getDownloadStatus)
+                .anyMatch(downloadStatus -> downloadStatus == FAILURE);
+        return allTasksWereSuccessful;
     }
 
-    private class DownloadRunner implements Runnable {
-        private final DownloadTask downloadTask;
-        private final ConcurrentLinkedQueue<Long> timePerTask;
+    // --------------
+    // Helper Methods
 
-        DownloadRunner(final DownloadTask downloadTask, final ConcurrentLinkedQueue<Long> timePerTask) {
-            this.downloadTask = downloadTask;
-            this.timePerTask = timePerTask;
-        }
+    private List<DownloadExecutionResult> getDownloadExecutionResults(final List<Future<DownloadExecutionResult>> futures) {
+        return futures.stream()
+                    .map(future -> {
+                        try {
+                            return future.get();
+                        } catch (InterruptedException | ExecutionException e) {
+                            e.printStackTrace();
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .collect(Collectors.toList());
+    }
 
-        @Override
-        public void run() {
-            long taskStartTime = System.currentTimeMillis();
-            if (Files.notExists(downloadTask.getDestinationCollectionPath())) {
-                try {
-                    Files.createDirectory(downloadTask.getDestinationCollectionPath());
-                } catch (final FileAlreadyExistsException e) {
-                    // do nothing
-                } catch (final IOException e) {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                }
-            }
+    private void printDownloadStats(List<DownloadExecutionResult> results, long totalDownloadTime) {
+        List<DownloadExecutionResult> successfulResults = results.stream()
+                .filter(downloadExecutionResult -> downloadExecutionResult.getDownloadStatus() == SUCCESSFUL)
+                .collect(Collectors.toList());
+        OptionalDouble average = successfulResults.stream()
+                .map(result -> result.getEndTime() - result.getStartTime())
+                .mapToLong(Long::longValue)
+                .average();
 
-            Path albumPath = Paths.get(downloadTask.getDestinationCollectionPath().toString(), downloadTask.getAlbumName());
-
-            if (Files.notExists(albumPath)) {
-                try {
-                    Files.createDirectory(albumPath);
-                } catch (final FileAlreadyExistsException e) {
-                    // do nothing
-                } catch (final IOException e) {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                }
-            }
-
-            Path filePath = Paths.get(albumPath.toString() + "/" + downloadTask.getFileName());
-
-            if (Files.exists(filePath)) {
-                System.out.println(String.format("Skipping %s --- %s ", downloadTask.getAlbumName(), downloadTask.getFileName()));
-                return;
-            }
-
-            try {
-                System.out.println(String.format("Downloading %s --- %s ", downloadTask.getAlbumName(), downloadTask.getFileName()));
-                FileUtils.copyURLToFile(new URL(downloadTask.getSourceUrl()), new File(filePath.toString()));
-            } catch (IOException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-
-            timePerTask.add(System.currentTimeMillis() - taskStartTime);
-        }
+        System.out.println(String.format("Items downloaded: %d. Total download time: %d average download time: %.02f.",
+                successfulResults.size(),
+                totalDownloadTime,
+                average.isPresent() ? average.getAsDouble() : 0));
     }
 }

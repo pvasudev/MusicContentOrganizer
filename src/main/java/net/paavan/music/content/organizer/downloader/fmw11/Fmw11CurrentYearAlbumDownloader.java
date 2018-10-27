@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -63,18 +64,25 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
         Path destinationNewSongsCollectionPath = getDestinationNewSongsCollectionPath();
         System.out.println("Download directory: " + destinationNewSongsCollectionPath.toString());
 
-        List<DownloadTask> downloadTasks = albumsToDownload.stream()
+        Map<String, List<DownloadTask>> downloadTasksByAlbumName = albumsToDownload.stream()
                 .map(fmw11Client::getDownloadableAlbum)
                 .map(downloadableAlbum -> getDownloadTasksForDownloadableAlbum(downloadableAlbum, destinationNewSongsCollectionPath))
+                .flatMap(Collection::stream)
+                .collect(Collectors.groupingBy(DownloadTask::getAlbumName));
+
+        List<DownloadTask> downloadTasks = downloadTasksByAlbumName.values().stream()
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
 
         System.out.println(String.format("Found %d albums and %d songs to download", albumsToDownload.size(), downloadTasks.size()));
 
-        downloadExecutor.execute(downloadTasks);
-
-        copyFiles(destinationNewSongsCollectionPath, Paths.get(transferSongsDirectory));
-        copyFiles(destinationNewSongsCollectionPath, Paths.get(allSongsDirectory));
+        // FIXME: All-or-nothing error handling
+        if (downloadExecutor.execute(downloadTasks)) {
+            copyFiles(destinationNewSongsCollectionPath, Paths.get(transferSongsDirectory));
+            copyFiles(destinationNewSongsCollectionPath, Paths.get(allSongsDirectory));
+        } else {
+            deleteDirectory(destinationNewSongsCollectionPath);
+        }
     }
 
     // --------------
@@ -142,12 +150,22 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                 .collect(Collectors.toList());
     }
 
-    private void copyFiles(Path sourcePath, Path destinationPath) {
+    private void copyFiles(final Path sourcePath, final Path destinationPath) {
+        System.out.println("Coping files from " + sourcePath + " to " + destinationPath);
         try {
             FileUtils.copyDirectory(new File(sourcePath.toString()), new File(destinationPath.toString()));
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
+        }
+    }
+
+    private void deleteDirectory(Path directoryPath) {
+        System.out.println("Deleting directory " + directoryPath);
+        try {
+            FileUtils.deleteDirectory(new File(directoryPath.toString()));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
