@@ -1,5 +1,7 @@
 package net.paavan.music.content.organizer.playlist;
 
+import lombok.extern.slf4j.Slf4j;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.io.IOException;
@@ -10,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class SelectedLastNPlaylistCreator implements PlaylistCreator {
     private static final String PLAYLISTS_DIR = "000 Playlists";
     private static final String PLAYLIST_FILE = "SEL 000 LAST %d.m3u";
@@ -31,7 +34,7 @@ public class SelectedLastNPlaylistCreator implements PlaylistCreator {
         try {
             mp3FilesInDirectory = filesystemClient.getMp3FilesInDirectory(selectedDirectory);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Unable to read MP3 files in selectedDirectory", e);
             throw new RuntimeException(e);
         }
         Path playlistDirectoryPath = Paths.get(selectedDirectory + "/" + PLAYLISTS_DIR);
@@ -39,7 +42,7 @@ public class SelectedLastNPlaylistCreator implements PlaylistCreator {
             try {
                 Files.createDirectory(playlistDirectoryPath);
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("Unable to create directory " + playlistDirectoryPath, e);
                 throw new RuntimeException(e);
             }
         }
@@ -50,7 +53,7 @@ public class SelectedLastNPlaylistCreator implements PlaylistCreator {
                 filesystemClient.writePlaylistFile(playlistFile, mp3FilesInDirectory
                         .subList(Math.max(mp3FilesInDirectory.size() - lastN, 0), mp3FilesInDirectory.size()));
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("Unable to write playlist file " + playlistFile, e);
                 throw new RuntimeException(e);
             }
         }

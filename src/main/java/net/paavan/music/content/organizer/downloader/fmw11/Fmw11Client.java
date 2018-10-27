@@ -1,5 +1,6 @@
 package net.paavan.music.content.organizer.downloader.fmw11;
 
+import lombok.extern.slf4j.Slf4j;
 import net.paavan.music.content.organizer.downloader.beans.AlbumSong;
 import net.paavan.music.content.organizer.downloader.beans.AvailableAlbum;
 import net.paavan.music.content.organizer.downloader.beans.DownloadableAlbum;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class Fmw11Client {
     private static final String MOVIES_PAGE_URL = "http://www.apunkabollywood.com/browser/category/view/347/movies";
 
@@ -24,7 +26,7 @@ public class Fmw11Client {
         try {
             doc = Jsoup.connect(pageUrl).get();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Unable to read webpage", e);
             throw new RuntimeException(e);
         }
         Element movieTable = doc.selectFirst("#categories > table");
@@ -45,7 +47,7 @@ public class Fmw11Client {
         try {
             doc = Jsoup.connect(availableAlbum.getUrl()).get();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Unable to read page", e);
             throw new RuntimeException(e);
         }
 
@@ -64,7 +66,7 @@ public class Fmw11Client {
                 // TODO: Create sub-albums if size > 1
                 doc = Jsoup.connect(availableAlbums.get(0).getUrl()).get();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("Unable to read webpage", e);
                 throw new RuntimeException(e);
             }
 
@@ -96,7 +98,7 @@ public class Fmw11Client {
         try {
             doc = Jsoup.connect(songDownloadPageUrl).get();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Unable to read webpage", e);
         }
         Element downloadBox = doc.selectFirst("#DownloadBox");
         Element songLink = downloadBox.selectFirst("a");

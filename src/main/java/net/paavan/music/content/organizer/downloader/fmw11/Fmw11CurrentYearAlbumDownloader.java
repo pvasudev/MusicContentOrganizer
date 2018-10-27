@@ -1,5 +1,7 @@
 package net.paavan.music.content.organizer.downloader.fmw11;
 
+import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import net.paavan.music.content.organizer.downloader.AlbumDownloader;
 import net.paavan.music.content.organizer.downloader.beans.AvailableAlbum;
 import net.paavan.music.content.organizer.downloader.beans.DownloadTask;
@@ -25,6 +27,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
     private final String allSongsDirectory;
     private final String newSongsDirectory;
@@ -57,12 +60,12 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                 .collect(Collectors.toList());
 
         if (albumsToDownload.isEmpty()) {
-            System.out.println("No new albums");
+            log.info("No new albums");
             return;
         }
 
         Path destinationNewSongsCollectionPath = getDestinationNewSongsCollectionPath();
-        System.out.println("Download directory: " + destinationNewSongsCollectionPath.toString());
+        log.info("Download directory: " + destinationNewSongsCollectionPath.toString());
 
         Map<String, List<DownloadTask>> downloadTasksByAlbumName = albumsToDownload.stream()
                 .map(fmw11Client::getDownloadableAlbum)
@@ -74,7 +77,7 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
 
-        System.out.println(String.format("Found %d albums and %d songs to download", albumsToDownload.size(), downloadTasks.size()));
+        log.info(String.format("Found %d albums and %d songs to download", albumsToDownload.size(), downloadTasks.size()));
 
         // FIXME: All-or-nothing error handling
         if (downloadExecutor.execute(downloadTasks)) {
@@ -102,7 +105,7 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                     .collect(Collectors.toList());
 
         } catch (final IOException e) {
-            e.printStackTrace();
+            log.error("Unable to read allSongsDirectory", e);
             throw new RuntimeException(e);
         }
         return existingAlbums;
@@ -117,7 +120,7 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                     .map(Path::toString)
                     .collect(Collectors.toList());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Unable to read newSongsDirectory", e);
             throw new RuntimeException(e);
         }
 
@@ -151,21 +154,22 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
     }
 
     private void copyFiles(final Path sourcePath, final Path destinationPath) {
-        System.out.println("Coping files from " + sourcePath + " to " + destinationPath);
+        log.info("Coping files from " + sourcePath + " to " + destinationPath);
         try {
             FileUtils.copyDirectory(new File(sourcePath.toString()), new File(destinationPath.toString()));
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Unable to copy files from " + sourcePath + " to " + destinationPath, e);
             throw new RuntimeException(e);
         }
     }
 
     private void deleteDirectory(Path directoryPath) {
-        System.out.println("Deleting directory " + directoryPath);
+        log.info("Deleting directory " + directoryPath);
         try {
             FileUtils.deleteDirectory(new File(directoryPath.toString()));
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Unable to delete directory " + directoryPath, e);
+            throw new RuntimeException(e);
         }
     }
 }

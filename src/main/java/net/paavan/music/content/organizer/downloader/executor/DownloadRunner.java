@@ -1,5 +1,6 @@
 package net.paavan.music.content.organizer.downloader.executor;
 
+import lombok.extern.slf4j.Slf4j;
 import net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult;
 import net.paavan.music.content.organizer.downloader.beans.DownloadTask;
 import org.apache.commons.io.FileUtils;
@@ -17,10 +18,11 @@ import static net.paavan.music.content.organizer.downloader.beans.DownloadExecut
 import static net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult.DownloadStatus.FAILURE;
 import static net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult.DownloadStatus.SUCCESSFUL;
 
+@Slf4j
 class DownloadRunner implements Callable<DownloadExecutionResult> {
     private final DownloadTask downloadTask;
 
-    DownloadRunner(final DownloadTask downloadTask) {
+    public DownloadRunner(final DownloadTask downloadTask) {
         this.downloadTask = downloadTask;
     }
 
@@ -36,7 +38,7 @@ class DownloadRunner implements Callable<DownloadExecutionResult> {
             } catch (final FileAlreadyExistsException e) {
                 // do nothing
             } catch (final IOException e) {
-                e.printStackTrace();
+                log.error("Unable to create destination collection path at " + downloadTask.getDestinationCollectionPath(), e);
                 throw new RuntimeException(e);
             }
         }
@@ -49,7 +51,7 @@ class DownloadRunner implements Callable<DownloadExecutionResult> {
             } catch (final FileAlreadyExistsException e) {
                 // do nothing
             } catch (final IOException e) {
-                e.printStackTrace();
+                log.error("Unable to create album path at " + albumPath, e);
                 return resultBuilder
                         .downloadStatus(FAILURE)
                         .endTime(System.currentTimeMillis())
@@ -60,7 +62,7 @@ class DownloadRunner implements Callable<DownloadExecutionResult> {
         Path filePath = Paths.get(albumPath.toString() + "/" + downloadTask.getFileName());
 
         if (Files.exists(filePath)) {
-            System.out.println(String.format("Skipping %s --- %s ", downloadTask.getAlbumName(), downloadTask.getFileName()));
+            log.info(String.format("Skipping %s --- %s ", downloadTask.getAlbumName(), downloadTask.getFileName()));
             return resultBuilder
                     .downloadStatus(ALREADY_EXISTS)
                     .endTime(System.currentTimeMillis())
@@ -68,10 +70,10 @@ class DownloadRunner implements Callable<DownloadExecutionResult> {
         }
 
         try {
-            System.out.println(String.format("Downloading %s --- %s ", downloadTask.getAlbumName(), downloadTask.getFileName()));
+            log.info(String.format("Downloading %s --- %s ", downloadTask.getAlbumName(), downloadTask.getFileName()));
             FileUtils.copyURLToFile(new URL(downloadTask.getSourceUrl()), new File(filePath.toString()));
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to download file from " + downloadTask.getSourceUrl(), e);
             return resultBuilder
                     .downloadStatus(FAILURE)
                     .endTime(System.currentTimeMillis())

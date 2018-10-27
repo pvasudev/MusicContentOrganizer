@@ -1,5 +1,6 @@
 package net.paavan.music.content.organizer.downloader.executor;
 
+import lombok.extern.slf4j.Slf4j;
 import net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult;
 import net.paavan.music.content.organizer.downloader.beans.DownloadTask;
 
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 import static net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult.DownloadStatus.FAILURE;
 import static net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult.DownloadStatus.SUCCESSFUL;
 
+@Slf4j
 public class DownloadExecutor {
     private static final int THREAD_COUNT = 10;
     private static final long TIMEOUT_PER_DOWNLOAD_TASK_SECONDS = 5;
@@ -35,16 +37,16 @@ public class DownloadExecutor {
         try {
             executorService.shutdown();
             long timeout = TIMEOUT_PER_DOWNLOAD_TASK_SECONDS * downloadTasks.size();
-            System.out.println("Will wait for time (seconds): " + timeout);
+            log.info("Will wait for time (seconds): " + timeout);
             executorService.awaitTermination(timeout, TimeUnit.SECONDS);
         } catch (final InterruptedException e) {
-            e.printStackTrace();
+            log.error("Interrupted while waiting for download executor", e);
             throw new RuntimeException(e);
         } finally {
             if (!executorService.isTerminated()) {
-                System.err.println("Canceling unfinished tasks");
+                log.error("Canceling unfinished tasks");
                 executorService.shutdownNow();
-                System.out.println("Executor terminated");
+                log.info("Executor terminated");
             }
         }
 
@@ -66,7 +68,7 @@ public class DownloadExecutor {
                         try {
                             return future.get();
                         } catch (InterruptedException | ExecutionException e) {
-                            e.printStackTrace();
+                            log.error("Unable to get Future results", e);
                             throw new RuntimeException(e);
                         }
                     })
@@ -82,7 +84,7 @@ public class DownloadExecutor {
                 .mapToLong(Long::longValue)
                 .average();
 
-        System.out.println(String.format("Items downloaded: %d. Total download time: %d average download time: %.02f.",
+        log.info(String.format("Items downloaded: %d. Total download time: %d average download time: %.02f.",
                 successfulResults.size(),
                 totalDownloadTime,
                 average.isPresent() ? average.getAsDouble() : 0));

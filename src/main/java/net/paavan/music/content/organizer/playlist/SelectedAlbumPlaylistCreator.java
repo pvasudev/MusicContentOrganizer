@@ -1,5 +1,7 @@
 package net.paavan.music.content.organizer.playlist;
 
+import lombok.extern.slf4j.Slf4j;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.io.IOException;
@@ -10,6 +12,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 public class SelectedAlbumPlaylistCreator implements PlaylistCreator {
     private static final String PLAYLISTS_DIR = "000 Playlists";
     private static final String PLAYLIST_FILE = "SEL %s.m3u";
@@ -33,7 +36,7 @@ public class SelectedAlbumPlaylistCreator implements PlaylistCreator {
                     .filter(path -> !path.endsWith(PLAYLISTS_DIR))
                     .collect(Collectors.toList());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Unable to read selectedDirectory", e);
             throw new RuntimeException(e);
         }
 
@@ -42,7 +45,7 @@ public class SelectedAlbumPlaylistCreator implements PlaylistCreator {
             try {
                 Files.createDirectory(playlistDirectoryPath);
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("Unable to create playlist directory " + playlistDirectoryPath, e);
                 throw new RuntimeException(e);
             }
         }
@@ -55,7 +58,7 @@ public class SelectedAlbumPlaylistCreator implements PlaylistCreator {
                         String.format(PLAYLIST_FILE, directoryPath.getFileName().toString()));
                 filesystemClient.writePlaylistFile(playlistFile, mp3FilesInDirectory);
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("Unable to write playlist file", e);
                 throw new RuntimeException(e);
             }
         }

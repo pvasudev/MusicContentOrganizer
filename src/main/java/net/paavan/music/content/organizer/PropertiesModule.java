@@ -2,6 +2,7 @@ package net.paavan.music.content.organizer;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,6 +10,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Properties;
 
+@Slf4j
 public class PropertiesModule extends AbstractModule {
     private static final String PROPERTIES_FILE = "config.properties";
 
@@ -42,7 +44,7 @@ public class PropertiesModule extends AbstractModule {
         try (InputStream resourceStream = classLoader.getResourceAsStream(PROPERTIES_FILE)) {
             properties.load(resourceStream);
         } catch (final IOException e) {
-            e.printStackTrace();
+            log.error("Unable to read properties file", e);
             throw new RuntimeException(e);
         }
         return properties;
@@ -52,7 +54,7 @@ public class PropertiesModule extends AbstractModule {
         try {
             return InetAddress.getLocalHost().getHostName();
         } catch (final UnknownHostException e) {
-            e.printStackTrace();
+            log.error("Unable to get hostname", e);
             throw new RuntimeException(e);
         }
     }
