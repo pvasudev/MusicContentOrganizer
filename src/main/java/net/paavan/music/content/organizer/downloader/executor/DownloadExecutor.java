@@ -13,7 +13,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult.DownloadStatus.FAILURE;
 import static net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult.DownloadStatus.SUCCESSFUL;
 
 @Slf4j
@@ -27,7 +26,7 @@ public class DownloadExecutor {
         executorService = Executors.newFixedThreadPool(THREAD_COUNT);
     }
 
-    public boolean execute(final List<DownloadTask> downloadTasks) {
+    public List<DownloadExecutionResult> execute(final List<DownloadTask> downloadTasks) {
         long startTime = System.currentTimeMillis();
         List<Future<DownloadExecutionResult>> futures = downloadTasks.stream()
                 .map(downloadTask -> new DownloadRunner(downloadTask))
@@ -53,10 +52,7 @@ public class DownloadExecutor {
         List<DownloadExecutionResult> results = getDownloadExecutionResults(futures);
         printDownloadStats(results, System.currentTimeMillis() - startTime);
 
-        boolean allTasksWereSuccessful = !results.stream()
-                .map(DownloadExecutionResult::getDownloadStatus)
-                .anyMatch(downloadStatus -> downloadStatus == FAILURE);
-        return allTasksWereSuccessful;
+        return results;
     }
 
     // --------------

@@ -1,9 +1,9 @@
 package net.paavan.music.content.organizer.downloader.fmw11;
 
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import net.paavan.music.content.organizer.downloader.AlbumDownloader;
 import net.paavan.music.content.organizer.downloader.beans.AvailableAlbum;
+import net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult;
 import net.paavan.music.content.organizer.downloader.beans.DownloadTask;
 import net.paavan.music.content.organizer.downloader.beans.DownloadableAlbum;
 import net.paavan.music.content.organizer.downloader.executor.DownloadExecutor;
@@ -24,8 +24,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult.DownloadStatus.FAILURE;
 
 @Slf4j
 public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
@@ -79,13 +82,11 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
 
         log.info(String.format("Found %d albums and %d songs to download", albumsToDownload.size(), downloadTasks.size()));
 
-        // FIXME: All-or-nothing error handling
-        if (downloadExecutor.execute(downloadTasks)) {
-            copyFiles(destinationNewSongsCollectionPath, Paths.get(transferSongsDirectory));
-            copyFiles(destinationNewSongsCollectionPath, Paths.get(allSongsDirectory));
-        } else {
-            deleteDirectory(destinationNewSongsCollectionPath);
-        }
+        List<DownloadExecutionResult> results = downloadExecutor.execute(downloadTasks);
+        handleErrorsIfAny(results, destinationNewSongsCollectionPath);
+
+        copyFiles(destinationNewSongsCollectionPath, Paths.get(transferSongsDirectory));
+        copyFiles(destinationNewSongsCollectionPath, Paths.get(allSongsDirectory));
     }
 
     // --------------
@@ -153,7 +154,39 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                 .collect(Collectors.toList());
     }
 
+    private void handleErrorsIfAny(List<DownloadExecutionResult> results, Path destinationNewSongsCollectionPath) {
+        Map<String, List<DownloadTask>> failedTasksByAlbumName = results.stream()
+                .filter(downloadExecutionResult -> downloadExecutionResult.getDownloadStatus() == FAILURE)
+                .map(DownloadExecutionResult::getDownloadTask)
+                .collect(Collectors.groupingBy(DownloadTask::getAlbumName));
+
+        Set<String> allAlbums = results.stream()
+                .map(DownloadExecutionResult::getDownloadTask)
+                .map(DownloadTask::getAlbumName)
+                .collect(Collectors.toSet());
+
+        if (allAlbums.containsAll(failedTasksByAlbumName.keySet())) {
+            log.error("No download albums were successful.");
+            deleteDirectory(destinationNewSongsCollectionPath);
+            return;
+        }
+
+        failedTasksByAlbumName.entrySet().stream()
+                .forEach(entry -> log.error(String.format(
+                        "The following download tasks from album %s failed. The album will be deleted.: \n%s",
+                        entry.getKey(),
+                        entry.getValue().stream()
+                                .map(DownloadTask::getSourceUrl)
+                                .collect(Collectors.joining("\n\t")))));
+        failedTasksByAlbumName.keySet().stream()
+                .forEach(albumName -> deleteDirectory(Paths.get(destinationNewSongsCollectionPath.toString(), albumName)));
+    }
+
     private void copyFiles(final Path sourcePath, final Path destinationPath) {
+        if (!Files.exists(sourcePath)) {
+            log.info("Source path " + sourcePath + " does not exist. Skipping copy.");
+            return;
+        }
         log.info("Coping files from " + sourcePath + " to " + destinationPath);
         try {
             FileUtils.copyDirectory(new File(sourcePath.toString()), new File(destinationPath.toString()));
