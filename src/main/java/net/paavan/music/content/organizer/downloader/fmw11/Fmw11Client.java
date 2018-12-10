@@ -22,7 +22,7 @@ public class Fmw11Client {
     }
 
     public List<AvailableAlbum> getAvailableAlbums(final String pageUrl) {
-        Document doc = null;
+        Document doc;
         try {
             doc = Jsoup.connect(pageUrl).get();
         } catch (IOException e) {
@@ -36,14 +36,14 @@ public class Fmw11Client {
                 .map(element -> AvailableAlbum.builder()
                         .title(getNameFromHtml(element.html()))
                         .year(getYearFromHtml(element.html()))
-                        .displayTitle(element.html().trim())
+                        .displayTitle(unescapeHtml(element.html().trim()))
                         .url(element.attr("href"))
                         .build())
                 .collect(Collectors.toList());
     }
 
     public DownloadableAlbum getDownloadableAlbum(final AvailableAlbum availableAlbum) {
-        Document doc = null;
+        Document doc;
         try {
             doc = Jsoup.connect(availableAlbum.getUrl()).get();
         } catch (IOException e) {
@@ -109,7 +109,7 @@ public class Fmw11Client {
         if (html.contains("(")) {
             return html.substring(0, html.indexOf("(")).trim();
         }
-        return html;
+        return unescapeHtml(html);
     }
 
     private Integer getYearFromHtml(final String html) {
@@ -122,5 +122,9 @@ public class Fmw11Client {
             }
         }
         return null;
+    }
+
+    private String unescapeHtml(final String html) {
+        return Jsoup.parse(html).text();
     }
 }
