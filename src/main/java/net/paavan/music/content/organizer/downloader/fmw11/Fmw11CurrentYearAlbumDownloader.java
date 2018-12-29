@@ -165,7 +165,7 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                 .map(DownloadTask::getAlbumName)
                 .collect(Collectors.toSet());
 
-        if (allAlbums.containsAll(failedTasksByAlbumName.keySet())) {
+        if (failedTasksByAlbumName.keySet().containsAll(allAlbums)) {
             log.error("No download albums were successful.");
             deleteDirectory(destinationNewSongsCollectionPath);
             return;
