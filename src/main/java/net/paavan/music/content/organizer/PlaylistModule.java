@@ -16,7 +16,7 @@ public class PlaylistModule extends AbstractModule {
         Multibinder<PlaylistCreator> uriBinder = Multibinder.newSetBinder(binder(), PlaylistCreator.class);
         uriBinder.addBinding().to(NewSongsAlbumCollectionPlaylistCreator.class);
         uriBinder.addBinding().to(NewSongsAlbumPlaylistCreator.class);
-        uriBinder.addBinding().to(SelectedAlbumPlaylistCreator.class);
+//        uriBinder.addBinding().to(SelectedAlbumPlaylistCreator.class); // Disabling this playlist creator
         uriBinder.addBinding().to(SelectedAllPlaylistCreator.class);
         uriBinder.addBinding().to(SelectedLastNPlaylistCreator.class);
         uriBinder.addBinding().to(SelectedReverse100PlaylistCreator.class);
