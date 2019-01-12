@@ -156,9 +156,14 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
 
     private void handleErrorsIfAny(List<DownloadExecutionResult> results, Path destinationNewSongsCollectionPath) {
         Map<String, List<DownloadTask>> failedTasksByAlbumName = results.stream()
-                .filter(downloadExecutionResult -> downloadExecutionResult.getDownloadStatus() == FAILURE)
+                .filter(downloadExecutionResult -> downloadExecutionResult.getDownloadStatus() == FAILURE ||
+                        downloadExecutionResult.getDownloadStatus() == null)
                 .map(DownloadExecutionResult::getDownloadTask)
                 .collect(Collectors.groupingBy(DownloadTask::getAlbumName));
+
+        if (!failedTasksByAlbumName.isEmpty()) {
+            log.error("There were " + failedTasksByAlbumName.size() + " failed download tasks");
+        }
 
         Set<String> allAlbums = results.stream()
                 .map(DownloadExecutionResult::getDownloadTask)
