@@ -18,7 +18,7 @@ import static net.paavan.music.content.organizer.downloader.beans.DownloadExecut
 @Slf4j
 public class DownloadExecutor {
     private static final int THREAD_COUNT = 10;
-    private static final long TIMEOUT_PER_DOWNLOAD_TASK_SECONDS = 5;
+    private static final long TIMEOUT_PER_DOWNLOAD_TASK_SECONDS = 10;
 
     private final ExecutorService executorService;
 
