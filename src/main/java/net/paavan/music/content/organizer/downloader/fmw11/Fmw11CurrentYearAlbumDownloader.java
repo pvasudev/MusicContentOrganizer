@@ -15,6 +15,9 @@ import javax.inject.Named;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -149,9 +152,16 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                         .sourceUrl(albumSong.getDownloadUrl())
                         .destinationCollectionPath(destinationNewSongsCollectionPath)
                         .albumName(downloadableAlbum.getDisplayTitle())
-                        .fileName(FilenameUtils.getName(URI.create(albumSong.getDownloadUrl()).getPath()))
+                        .fileName(getFilenameFromDownloadUrl(albumSong.getDownloadUrl()))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private String getFilenameFromDownloadUrl(final String downloadUrl) {
+        String encodedUrl = URLEncoder.encode(downloadUrl, StandardCharsets.UTF_8);
+        String uri = URI.create(encodedUrl).getPath();
+        String decodedUrl = URLDecoder.decode(uri, StandardCharsets.UTF_8);
+        return FilenameUtils.getName(decodedUrl);
     }
 
     private void handleErrorsIfAny(List<DownloadExecutionResult> results, Path destinationNewSongsCollectionPath) {
