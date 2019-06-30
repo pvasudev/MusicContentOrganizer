@@ -2,6 +2,8 @@ package net.paavan.music.content.organizer;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
+import net.paavan.music.content.organizer.playlist.CokeStudioMtvPlaylistCreator;
+import net.paavan.music.content.organizer.playlist.CokeStudioPlaylistCreator;
 import net.paavan.music.content.organizer.playlist.NewSongsAlbumCollectionPlaylistCreator;
 import net.paavan.music.content.organizer.playlist.NewSongsAlbumPlaylistCreator;
 import net.paavan.music.content.organizer.playlist.PlaylistCreator;
@@ -20,5 +22,7 @@ public class PlaylistModule extends AbstractModule {
         uriBinder.addBinding().to(SelectedAllPlaylistCreator.class);
         uriBinder.addBinding().to(SelectedLastNPlaylistCreator.class);
         uriBinder.addBinding().to(SelectedReverse100PlaylistCreator.class);
+        uriBinder.addBinding().to(CokeStudioPlaylistCreator.class);
+        uriBinder.addBinding().to(CokeStudioMtvPlaylistCreator.class);
     }
 }
