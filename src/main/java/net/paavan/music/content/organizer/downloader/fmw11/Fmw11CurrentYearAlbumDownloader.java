@@ -69,10 +69,22 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
         List<String> existingAlbums = getExistingAlbums();
 
         List<AvailableAlbum> albumsToDownload = albums.stream()
+                // Only new albums that were not in the archived page
                 .filter(availableAlbum -> !oldAlbums.stream()
                         .map(AvailableAlbum::getDisplayTitle)
                         .anyMatch(displayTitle -> displayTitle.equals(availableAlbum.getDisplayTitle())))
+                // Should not already exist
                 .filter(availableAlbum -> !existingAlbums.contains(availableAlbum.getDisplayTitle()))
+                // Add year if it is not present
+                .map(availableAlbum -> Objects.nonNull(availableAlbum.getYear()) ? availableAlbum : availableAlbum.toBuilder()
+                        .year(Calendar.getInstance().get(Calendar.YEAR))
+                        .displayTitle(new StringBuilder()
+                                .append(availableAlbum.getDisplayTitle())
+                                .append(" (")
+                                .append(Calendar.getInstance().get(Calendar.YEAR))
+                                .append(")")
+                                .toString())
+                        .build())
                 .collect(Collectors.toList());
 
         if (albumsToDownload.isEmpty()) {
