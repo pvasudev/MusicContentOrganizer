@@ -35,6 +35,9 @@ import static net.paavan.music.content.organizer.downloader.beans.DownloadExecut
 
 @Slf4j
 public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
+    private static final String MOVIES_PAGE_URL = "http://www.apunkabollywood.com/browser/category/view/347/movies";
+    private static final String ARCHIVE_URL = "https://web.archive.org/web/20181112083533/http://www.apunkabollywood.com/browser/category/view/347/movies";
+
     private final String allSongsDirectory;
     private final String newSongsDirectory;
     private final String transferSongsDirectory;
@@ -55,13 +58,20 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
 
     @Override
     public void download() {
-        List<AvailableAlbum> availableAlbums = fmw11Client.getAvailableAlbums().stream()
-                .filter(this::isAlbumYearCurrent)
+        List<AvailableAlbum> albums = fmw11Client.getAlbumsOnPage(MOVIES_PAGE_URL).stream()
+                .filter(this::isAlbumYearNullOrCurrent)
+                .collect(Collectors.toList());
+
+        List<AvailableAlbum> oldAlbums = fmw11Client.getAlbumsOnPage(ARCHIVE_URL).stream()
+                .filter(this::isAlbumYearNullOrCurrent)
                 .collect(Collectors.toList());
 
         List<String> existingAlbums = getExistingAlbums();
 
-        List<AvailableAlbum> albumsToDownload = availableAlbums.stream()
+        List<AvailableAlbum> albumsToDownload = albums.stream()
+                .filter(availableAlbum -> !oldAlbums.stream()
+                        .map(AvailableAlbum::getDisplayTitle)
+                        .anyMatch(displayTitle -> displayTitle.equals(availableAlbum.getDisplayTitle())))
                 .filter(availableAlbum -> !existingAlbums.contains(availableAlbum.getDisplayTitle()))
                 .collect(Collectors.toList());
 
@@ -95,15 +105,18 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
     // --------------
     // Helper Methods
 
-    private boolean isAlbumYearCurrent(final AvailableAlbum availableAlbum) {
-        return availableAlbum.getYear() != null && availableAlbum.getYear().equals(Calendar.getInstance().get(Calendar.YEAR));
+    private boolean isAlbumYearNullOrCurrent(final AvailableAlbum availableAlbum) {
+        if (Objects.isNull(availableAlbum.getYear())) {
+            return true;
+        }
+
+        return availableAlbum.getYear().equals(Calendar.getInstance().get(Calendar.YEAR));
     }
 
     private List<String> getExistingAlbums() {
         List<String> existingAlbums;
         try (Stream<Path> paths = Files.list(Paths.get(allSongsDirectory))) {
             existingAlbums = paths.filter(Files::isDirectory)
-                    .filter(path -> path.getFileName().toString().contains(String.valueOf(Calendar.getInstance().get(Calendar.YEAR))))
                     .map(Path::getFileName)
                     .map(Path::toString)
                     .collect(Collectors.toList());

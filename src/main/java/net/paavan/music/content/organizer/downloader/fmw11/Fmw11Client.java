@@ -15,13 +15,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class Fmw11Client {
-    private static final String MOVIES_PAGE_URL = "http://www.apunkabollywood.com/browser/category/view/347/movies";
-
-    public List<AvailableAlbum> getAvailableAlbums() {
-        return getAvailableAlbums(MOVIES_PAGE_URL);
-    }
-
-    public List<AvailableAlbum> getAvailableAlbums(final String pageUrl) {
+    public List<AvailableAlbum> getAlbumsOnPage(final String pageUrl) {
         Document doc;
         try {
             doc = Jsoup.connect(pageUrl).get();
@@ -53,7 +47,7 @@ public class Fmw11Client {
 
         Element movieTable = doc.selectFirst("#entries > table");
         if (movieTable == null) {
-            List<AvailableAlbum> availableAlbums = getAvailableAlbums(availableAlbum.getUrl());
+            List<AvailableAlbum> availableAlbums = getAlbumsOnPage(availableAlbum.getUrl());
             if (availableAlbums.isEmpty()) {
                 throw new RuntimeException("Unable to find album for " + availableAlbum);
             }
