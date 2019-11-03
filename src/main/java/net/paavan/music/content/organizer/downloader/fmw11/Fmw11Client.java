@@ -10,7 +10,9 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -27,12 +29,20 @@ public class Fmw11Client {
         Elements movies = movieTable.select("a");
 
         return movies.stream()
-                .map(element -> AvailableAlbum.builder()
-                        .title(getNameFromHtml(element.html()))
-                        .year(getYearFromHtml(element.html()))
-                        .displayTitle(unescapeHtml(element.html().trim()))
-                        .url(element.attr("href"))
-                        .build())
+                .map(element -> {
+                    Optional<Integer> year = getYearFromHtml(element.html());
+                    String displayTitle = unescapeHtml(element.html().trim());
+                    if (!year.isPresent()) {
+                        year = Optional.of(Calendar.getInstance().get(Calendar.YEAR));
+                        displayTitle = String.format("%s (%d)", displayTitle, year.get());
+                    }
+                    return AvailableAlbum.builder()
+                            .title(getNameFromHtml(element.html()))
+                            .year(year.get())
+                            .displayTitle(displayTitle)
+                            .url(element.attr("href"))
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
@@ -106,16 +116,16 @@ public class Fmw11Client {
         return unescapeHtml(html);
     }
 
-    private Integer getYearFromHtml(final String html) {
+    private Optional<Integer> getYearFromHtml(final String html) {
         if (html.contains("(")) {
             String stringYear = html.substring(html.indexOf("(") + 1, html.length() - 1).trim();
             try {
-                return Integer.valueOf(stringYear);
+                return Optional.of(Integer.valueOf(stringYear));
             } catch (final NumberFormatException e) {
-                return null;
+                return Optional.empty();
             }
         }
-        return null;
+        return Optional.empty();
     }
 
     private String unescapeHtml(final String html) {

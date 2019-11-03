@@ -59,11 +59,11 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
     @Override
     public void download() {
         List<AvailableAlbum> albums = fmw11Client.getAlbumsOnPage(MOVIES_PAGE_URL).stream()
-                .filter(this::isAlbumYearNullOrCurrent)
+                .filter(this::isAlbumYearCurrent)
                 .collect(Collectors.toList());
 
         List<AvailableAlbum> oldAlbums = fmw11Client.getAlbumsOnPage(ARCHIVE_URL).stream()
-                .filter(this::isAlbumYearNullOrCurrent)
+                .filter(this::isAlbumYearCurrent)
                 .collect(Collectors.toList());
 
         List<String> existingAlbums = getExistingAlbums();
@@ -75,16 +75,6 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                         .anyMatch(displayTitle -> displayTitle.equals(availableAlbum.getDisplayTitle())))
                 // Should not already exist
                 .filter(availableAlbum -> !existingAlbums.contains(availableAlbum.getDisplayTitle()))
-                // Add year if it is not present
-                .map(availableAlbum -> Objects.nonNull(availableAlbum.getYear()) ? availableAlbum : availableAlbum.toBuilder()
-                        .year(Calendar.getInstance().get(Calendar.YEAR))
-                        .displayTitle(new StringBuilder()
-                                .append(availableAlbum.getDisplayTitle())
-                                .append(" (")
-                                .append(Calendar.getInstance().get(Calendar.YEAR))
-                                .append(")")
-                                .toString())
-                        .build())
                 .collect(Collectors.toList());
 
         if (albumsToDownload.isEmpty()) {
@@ -117,11 +107,7 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
     // --------------
     // Helper Methods
 
-    private boolean isAlbumYearNullOrCurrent(final AvailableAlbum availableAlbum) {
-        if (Objects.isNull(availableAlbum.getYear())) {
-            return true;
-        }
-
+    private boolean isAlbumYearCurrent(final AvailableAlbum availableAlbum) {
         return availableAlbum.getYear().equals(Calendar.getInstance().get(Calendar.YEAR));
     }
 
