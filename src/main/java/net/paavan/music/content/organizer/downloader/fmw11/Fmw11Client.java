@@ -17,14 +17,10 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class Fmw11Client {
+    private static final int MAX_RETRIES = 5;
+
     public List<AvailableAlbum> getAlbumsOnPage(final String pageUrl) {
-        Document doc;
-        try {
-            doc = Jsoup.connect(pageUrl).get();
-        } catch (IOException e) {
-            log.error("Unable to read webpage", e);
-            throw new RuntimeException(e);
-        }
+        Document doc = getDocumentFromUrlWithRetry(pageUrl);
         Element movieTable = doc.selectFirst("#categories > table");
         Elements movies = movieTable.select("a");
 
@@ -47,13 +43,7 @@ public class Fmw11Client {
     }
 
     public DownloadableAlbum getDownloadableAlbum(final AvailableAlbum availableAlbum) {
-        Document doc;
-        try {
-            doc = Jsoup.connect(availableAlbum.getUrl()).get();
-        } catch (IOException e) {
-            log.error("Unable to read page", e);
-            throw new RuntimeException(e);
-        }
+        Document doc = getDocumentFromUrlWithRetry(availableAlbum.getUrl());
 
         Element movieTable = doc.selectFirst("#entries > table");
         if (movieTable == null) {
@@ -65,15 +55,9 @@ public class Fmw11Client {
                 throw new RuntimeException("Multiple sub-albums found for " + availableAlbum);
             }
 
-            try {
-                // Only retrieving the first nested album
-                // TODO: Create sub-albums if size > 1
-                doc = Jsoup.connect(availableAlbums.get(0).getUrl()).get();
-            } catch (IOException e) {
-                log.error("Unable to read webpage", e);
-                throw new RuntimeException(e);
-            }
-
+            // Only retrieving the first nested album
+            // TODO: Create sub-albums if size > 1
+            doc = getDocumentFromUrlWithRetry(availableAlbums.get(0).getUrl());
             movieTable = doc.selectFirst("#entries > table");
             if (movieTable == null) {
                 throw new RuntimeException("Unable to parse album " + availableAlbum);
@@ -97,13 +81,26 @@ public class Fmw11Client {
                 .build();
     }
 
+    // --------------
+    // Helper Methods
+
+    private Document getDocumentFromUrlWithRetry(final String url) {
+        int attempts = 0;
+        do {
+            try {
+                return Jsoup.connect(url).get();
+            } catch (final IOException e) {
+                attempts++;
+                log.error(String.format("Unable to read webpage %s after %d attempt(s). Retrying: %s.", url, attempts,
+                        (attempts < MAX_RETRIES ? "Yes" : "No")), e);
+            }
+        } while (attempts < MAX_RETRIES);
+
+        throw new RuntimeException(String.format("Unable to read webpage after %d attempts", attempts));
+    }
+
     private String getSongDownloadUrl(final String songDownloadPageUrl) {
-        Document doc = null;
-        try {
-            doc = Jsoup.connect(songDownloadPageUrl).get();
-        } catch (IOException e) {
-            log.error("Unable to read webpage", e);
-        }
+        Document doc = getDocumentFromUrlWithRetry(songDownloadPageUrl);
         Element downloadBox = doc.selectFirst("#DownloadBox");
         Element songLink = downloadBox.selectFirst("a");
         return songLink.attr("href").replace(" ", "%20");
