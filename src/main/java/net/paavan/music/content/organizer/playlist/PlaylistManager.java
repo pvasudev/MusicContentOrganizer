@@ -1,5 +1,7 @@
 package net.paavan.music.content.organizer.playlist;
 
+import net.paavan.music.content.organizer.playlist.creator.PlaylistCreator;
+
 import javax.inject.Inject;
 import java.util.Set;
 

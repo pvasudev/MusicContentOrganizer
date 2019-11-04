@@ -1,6 +1,7 @@
-package net.paavan.music.content.organizer.playlist;
+package net.paavan.music.content.organizer.playlist.creator;
 
 import lombok.extern.slf4j.Slf4j;
+import net.paavan.music.content.organizer.playlist.FilesystemClient;
 
 import javax.inject.Inject;
 import javax.inject.Named;
