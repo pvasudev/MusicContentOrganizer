@@ -1,6 +1,8 @@
 package net.paavan.music.content.organizer.downloader.fmw11;
 
 import lombok.extern.slf4j.Slf4j;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
 import net.paavan.music.content.organizer.downloader.AlbumDownloader;
 import net.paavan.music.content.organizer.downloader.beans.AvailableAlbum;
 import net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult;
@@ -21,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
@@ -222,13 +225,13 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
         }
     }
 
-    private void deleteDirectory(Path directoryPath) {
+    private void deleteDirectory(final Path directoryPath) {
         log.info("Deleting directory " + directoryPath);
-        try {
-            FileUtils.deleteDirectory(new File(directoryPath.toString()));
-        } catch (IOException e) {
-            log.error("Unable to delete directory " + directoryPath, e);
-            throw new RuntimeException(e);
-        }
+        Failsafe
+                .with(new RetryPolicy<>()
+                        .handle(IOException.class)
+                        .withDelay(Duration.ofSeconds(2l))
+                        .withMaxAttempts(5))
+                .run(() -> FileUtils.deleteDirectory(new File(directoryPath.toString())));
     }
 }
