@@ -1,5 +1,6 @@
 package net.paavan.music.content.organizer.downloader.fmw11;
 
+import com.google.common.base.Joiner;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
@@ -31,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -38,12 +41,13 @@ import static net.paavan.music.content.organizer.downloader.beans.DownloadExecut
 
 @Slf4j
 public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
-    private static final String MOVIES_PAGE_URL = "http://www.apunkabollywood.com/browser/category/view/347/movies";
+    private static final String MOVIES_PAGE_URL = "https://api.gigahost123.com/api/listS3?bucket=mp3.gigahost123.com&path=%2Fsongs%2FAudio%2Findian%2Fmovies%2F";
     private static final String ARCHIVE_URL = "https://web.archive.org/web/20181112083533/http://www.apunkabollywood.com/browser/category/view/347/movies";
 
     private final String allSongsDirectory;
     private final String newSongsDirectory;
     private final String transferSongsDirectory;
+    final ApunKaBollywoodClient apunKaBollywoodClient;
     private final Fmw11OldWebpageClient fmw11OldWebpageClient;
     private final DownloadExecutor downloadExecutor;
 
@@ -51,17 +55,20 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
     public Fmw11CurrentYearAlbumDownloader(@Named("all.songs.directory") final String allSongsDirectory,
                                            @Named("new.songs.directory") final String newSongsDirectory,
                                            @Named("transfer.songs.directory") final String transferSongsDirectory,
-                                           final Fmw11OldWebpageClient fmw11OldWebpageClient, final DownloadExecutor downloadExecutor) {
+                                           final Fmw11OldWebpageClient fmw11OldWebpageClient,
+                                           final DownloadExecutor downloadExecutor,
+                                           final ApunKaBollywoodClient apunKaBollywoodClient) {
         this.allSongsDirectory = allSongsDirectory;
         this.newSongsDirectory = newSongsDirectory;
         this.transferSongsDirectory = transferSongsDirectory;
+        this.apunKaBollywoodClient = apunKaBollywoodClient;
         this.fmw11OldWebpageClient = fmw11OldWebpageClient;
         this.downloadExecutor = downloadExecutor;
     }
 
     @Override
     public void download() {
-        List<AvailableAlbum> albums = fmw11OldWebpageClient.getAlbumsOnPage(MOVIES_PAGE_URL).stream()
+        List<AvailableAlbum> albums = apunKaBollywoodClient.getAlbumsOnPage(MOVIES_PAGE_URL).stream()
                 .filter(this::isAlbumYearCurrent)
                 .collect(Collectors.toList());
 
@@ -75,7 +82,7 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                 // Only new albums that were not in the archived page
                 .filter(availableAlbum -> !oldAlbums.stream()
                         .map(AvailableAlbum::getDisplayTitle)
-                        .anyMatch(displayTitle -> displayTitle.equals(availableAlbum.getDisplayTitle())))
+                        .anyMatch(displayTitle -> displayTitle.equalsIgnoreCase(availableAlbum.getDisplayTitle())))
                 // Should not already exist
                 .filter(availableAlbum -> !existingAlbums.contains(availableAlbum.getDisplayTitle()))
                 .collect(Collectors.toList());
@@ -89,7 +96,7 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
         log.info("Download directory: " + destinationNewSongsCollectionPath.toString());
 
         Map<String, List<DownloadTask>> downloadTasksByAlbumName = albumsToDownload.stream()
-                .map(fmw11OldWebpageClient::getDownloadableAlbum)
+                .map(apunKaBollywoodClient::getDownloadableAlbum)
                 .map(downloadableAlbum -> getDownloadTasksForDownloadableAlbum(downloadableAlbum, destinationNewSongsCollectionPath))
                 .flatMap(Collection::stream)
                 .collect(Collectors.groupingBy(DownloadTask::getAlbumName));
@@ -98,7 +105,8 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
 
-        log.info(String.format("Found %d albums and %d songs to download", albumsToDownload.size(), downloadTasks.size()));
+        log.info(String.format("Found the following new albums: \n\t%s.\nStarting download of %d albums and %d songs.",
+                getPrintableAlbumsList(albumsToDownload), albumsToDownload.size(), downloadTasks.size()));
 
         List<DownloadExecutionResult> results = downloadExecutor.execute(downloadTasks);
         handleErrorsIfAny(results, destinationNewSongsCollectionPath);
@@ -166,7 +174,7 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                         .sourceUrl(albumSong.getDownloadUrl())
                         .destinationCollectionPath(destinationNewSongsCollectionPath)
                         .albumName(downloadableAlbum.getDisplayTitle())
-                        .fileName(getFilenameFromDownloadUrl(albumSong.getDownloadUrl()))
+                        .fileName(getFilenameFromDownloadUrl(albumSong.getTitle()))
                         .build())
                 .collect(Collectors.toList());
     }
@@ -176,6 +184,16 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
         String uri = URI.create(encodedUrl).getPath();
         String decodedUrl = URLDecoder.decode(uri, StandardCharsets.UTF_8);
         return FilenameUtils.getName(decodedUrl);
+    }
+
+    private String getPrintableAlbumsList(List<AvailableAlbum> albumsToDownload) {
+        AtomicInteger counter = new AtomicInteger();
+        return Joiner
+                .on("\n\t")
+                .withKeyValueSeparator(". ")
+                .join(albumsToDownload.stream()
+                        .map(AvailableAlbum::getDisplayTitle)
+                        .collect(Collectors.toMap(s -> Integer.valueOf(counter.incrementAndGet()), Function.identity())));
     }
 
     private void handleErrorsIfAny(List<DownloadExecutionResult> results, Path destinationNewSongsCollectionPath) {
