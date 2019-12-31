@@ -47,7 +47,7 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
     private final String allSongsDirectory;
     private final String newSongsDirectory;
     private final String transferSongsDirectory;
-    final ApunKaBollywoodClient apunKaBollywoodClient;
+    private final ApunKaBollywoodClient apunKaBollywoodClient;
     private final Fmw11OldWebpageClient fmw11OldWebpageClient;
     private final DownloadExecutor downloadExecutor;
 
@@ -55,9 +55,9 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
     public Fmw11CurrentYearAlbumDownloader(@Named("all.songs.directory") final String allSongsDirectory,
                                            @Named("new.songs.directory") final String newSongsDirectory,
                                            @Named("transfer.songs.directory") final String transferSongsDirectory,
+                                           final ApunKaBollywoodClient apunKaBollywoodClient,
                                            final Fmw11OldWebpageClient fmw11OldWebpageClient,
-                                           final DownloadExecutor downloadExecutor,
-                                           final ApunKaBollywoodClient apunKaBollywoodClient) {
+                                           final DownloadExecutor downloadExecutor) {
         this.allSongsDirectory = allSongsDirectory;
         this.newSongsDirectory = newSongsDirectory;
         this.transferSongsDirectory = transferSongsDirectory;
