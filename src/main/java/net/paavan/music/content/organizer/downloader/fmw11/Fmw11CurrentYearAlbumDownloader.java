@@ -80,9 +80,9 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
 
         List<AvailableAlbum> albumsToDownload = albums.stream()
                 // Only new albums that were not in the archived page
-                .filter(availableAlbum -> !oldAlbums.stream()
+                .filter(availableAlbum -> oldAlbums.stream()
                         .map(AvailableAlbum::getDisplayTitle)
-                        .anyMatch(displayTitle -> displayTitle.equalsIgnoreCase(availableAlbum.getDisplayTitle())))
+                        .noneMatch(displayTitle -> displayTitle.equalsIgnoreCase(availableAlbum.getDisplayTitle())))
                 // Should not already exist
                 .filter(availableAlbum -> !existingAlbums.contains(availableAlbum.getDisplayTitle()))
                 .collect(Collectors.toList());
@@ -186,14 +186,14 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
         return FilenameUtils.getName(decodedUrl);
     }
 
-    private String getPrintableAlbumsList(List<AvailableAlbum> albumsToDownload) {
+    private String getPrintableAlbumsList(final List<AvailableAlbum> albumsToDownload) {
         AtomicInteger counter = new AtomicInteger();
         return Joiner
                 .on("\n\t")
                 .withKeyValueSeparator(". ")
                 .join(albumsToDownload.stream()
                         .map(AvailableAlbum::getDisplayTitle)
-                        .collect(Collectors.toMap(s -> Integer.valueOf(counter.incrementAndGet()), Function.identity())));
+                        .collect(Collectors.toMap(s -> counter.incrementAndGet(), Function.identity())));
     }
 
     private void handleErrorsIfAny(List<DownloadExecutionResult> results, Path destinationNewSongsCollectionPath) {
@@ -218,14 +218,12 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
             return;
         }
 
-        failedTasksByAlbumName.entrySet().stream()
-                .forEach(entry -> log.error(String.format(
-                        "The following download tasks from album %s failed. The album will be deleted.: \n%s",
-                        entry.getKey(),
-                        entry.getValue().stream()
-                                .map(DownloadTask::getSourceUrl)
-                                .collect(Collectors.joining("\n\t")))));
-        failedTasksByAlbumName.keySet().stream()
+        failedTasksByAlbumName.forEach((key, value) -> log.error(String.format(
+                "The following download tasks from album %s failed. The album will be deleted.: \n%s", key,
+                value.stream()
+                        .map(DownloadTask::getSourceUrl)
+                        .collect(Collectors.joining("\n\t")))));
+        failedTasksByAlbumName.keySet()
                 .forEach(albumName -> deleteDirectory(Paths.get(destinationNewSongsCollectionPath.toString(), albumName)));
     }
 
@@ -248,7 +246,7 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
         Failsafe
                 .with(new RetryPolicy<>()
                         .handle(IOException.class)
-                        .withDelay(Duration.ofSeconds(2l))
+                        .withDelay(Duration.ofSeconds(2L))
                         .withMaxAttempts(5))
                 .run(() -> FileUtils.deleteDirectory(new File(directoryPath.toString())));
     }

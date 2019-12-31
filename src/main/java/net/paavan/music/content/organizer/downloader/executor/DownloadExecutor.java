@@ -29,8 +29,8 @@ public class DownloadExecutor {
     public List<DownloadExecutionResult> execute(final List<DownloadTask> downloadTasks) {
         long startTime = System.currentTimeMillis();
         List<Future<DownloadExecutionResult>> futures = downloadTasks.stream()
-                .map(downloadTask -> new DownloadRunner(downloadTask))
-                .map(downloadRunner -> executorService.submit(downloadRunner))
+                .map(DownloadRunner::new)
+                .map(executorService::submit)
                 .collect(Collectors.toList());
 
         try {
