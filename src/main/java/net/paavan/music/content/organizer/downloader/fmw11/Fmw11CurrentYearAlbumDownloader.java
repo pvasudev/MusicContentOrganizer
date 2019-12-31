@@ -44,28 +44,28 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
     private final String allSongsDirectory;
     private final String newSongsDirectory;
     private final String transferSongsDirectory;
-    private final Fmw11Client fmw11Client;
+    private final Fmw11OldWebpageClient fmw11OldWebpageClient;
     private final DownloadExecutor downloadExecutor;
 
     @Inject
     public Fmw11CurrentYearAlbumDownloader(@Named("all.songs.directory") final String allSongsDirectory,
                                            @Named("new.songs.directory") final String newSongsDirectory,
                                            @Named("transfer.songs.directory") final String transferSongsDirectory,
-                                           final Fmw11Client fmw11Client, final DownloadExecutor downloadExecutor) {
+                                           final Fmw11OldWebpageClient fmw11OldWebpageClient, final DownloadExecutor downloadExecutor) {
         this.allSongsDirectory = allSongsDirectory;
         this.newSongsDirectory = newSongsDirectory;
         this.transferSongsDirectory = transferSongsDirectory;
-        this.fmw11Client = fmw11Client;
+        this.fmw11OldWebpageClient = fmw11OldWebpageClient;
         this.downloadExecutor = downloadExecutor;
     }
 
     @Override
     public void download() {
-        List<AvailableAlbum> albums = fmw11Client.getAlbumsOnPage(MOVIES_PAGE_URL).stream()
+        List<AvailableAlbum> albums = fmw11OldWebpageClient.getAlbumsOnPage(MOVIES_PAGE_URL).stream()
                 .filter(this::isAlbumYearCurrent)
                 .collect(Collectors.toList());
 
-        List<AvailableAlbum> oldAlbums = fmw11Client.getAlbumsOnPage(ARCHIVE_URL).stream()
+        List<AvailableAlbum> oldAlbums = fmw11OldWebpageClient.getAlbumsOnPage(ARCHIVE_URL).stream()
                 .filter(this::isAlbumYearCurrent)
                 .collect(Collectors.toList());
 
@@ -89,7 +89,7 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
         log.info("Download directory: " + destinationNewSongsCollectionPath.toString());
 
         Map<String, List<DownloadTask>> downloadTasksByAlbumName = albumsToDownload.stream()
-                .map(fmw11Client::getDownloadableAlbum)
+                .map(fmw11OldWebpageClient::getDownloadableAlbum)
                 .map(downloadableAlbum -> getDownloadTasksForDownloadableAlbum(downloadableAlbum, destinationNewSongsCollectionPath))
                 .flatMap(Collection::stream)
                 .collect(Collectors.groupingBy(DownloadTask::getAlbumName));

@@ -16,9 +16,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class Fmw11Client {
+public class Fmw11OldWebpageClient implements Fmw11Client {
     private static final int MAX_RETRIES = 5;
 
+    @Override
     public List<AvailableAlbum> getAlbumsOnPage(final String pageUrl) {
         Document doc = getDocumentFromUrlWithRetry(pageUrl);
         Element movieTable = doc.selectFirst("#categories > table");
@@ -42,6 +43,7 @@ public class Fmw11Client {
                 .collect(Collectors.toList());
     }
 
+    @Override
     public DownloadableAlbum getDownloadableAlbum(final AvailableAlbum availableAlbum) {
         Document doc = getDocumentFromUrlWithRetry(availableAlbum.getUrl());
 
