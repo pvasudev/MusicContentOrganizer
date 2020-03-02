@@ -105,7 +105,7 @@ public class Fmw11CurrentYearAlbumDownloader implements AlbumDownloader {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
 
-        log.info(String.format("Found the following new albums: \n\t%s.\nStarting download of %d albums and %d songs.",
+        log.info(String.format("Found the following new albums: \n\t%s\nStarting download of %d albums and %d songs.",
                 getPrintableAlbumsList(albumsToDownload), albumsToDownload.size(), downloadTasks.size()));
 
         List<DownloadExecutionResult> results = downloadExecutor.execute(downloadTasks);
