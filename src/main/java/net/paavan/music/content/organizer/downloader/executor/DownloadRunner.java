@@ -19,7 +19,7 @@ import static net.paavan.music.content.organizer.downloader.beans.DownloadExecut
 import static net.paavan.music.content.organizer.downloader.beans.DownloadExecutionResult.DownloadStatus.SUCCESSFUL;
 
 @Slf4j
-class DownloadRunner implements Callable<DownloadExecutionResult> {
+public class DownloadRunner implements Callable<DownloadExecutionResult> {
     private final DownloadTask downloadTask;
 
     public DownloadRunner(final DownloadTask downloadTask) {
@@ -59,7 +59,8 @@ class DownloadRunner implements Callable<DownloadExecutionResult> {
             }
         }
 
-        Path filePath = Paths.get(albumPath.toString() + "/" + downloadTask.getFileName());
+        Path filePath = Paths.get(albumPath.toString() + "/" + downloadTask.getFileName()
+                .replaceAll("[\\\\/:*?\"<>|]", ""));
 
         if (Files.exists(filePath)) {
             log.info(String.format("Skipping %s --- %s ", downloadTask.getAlbumName(), downloadTask.getFileName()));
