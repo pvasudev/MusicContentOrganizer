@@ -90,6 +90,7 @@ public class PagalSongClient implements AlbumProviderClient {
                 .replaceAll("songs", "")
                 .replaceAll("info", "")
                 .replaceAll(String.format("\\(%d\\)", year), "")
+                .replaceAll(":", "-")
                 .trim();
         return cleanedTitle;
     }
@@ -102,6 +103,7 @@ public class PagalSongClient implements AlbumProviderClient {
                 .stream()
                 .map(element -> element.attr("href"))
                 .map(s -> s.replace(" ", "%20"))
+                .map(s -> s.replace("'", ""))
                 .collect(Collectors.toList());
 
         return AlbumSong.builder()

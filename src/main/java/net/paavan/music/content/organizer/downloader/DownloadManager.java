@@ -100,7 +100,7 @@ public class DownloadManager {
         }
 
         failedTasksByAlbumName.forEach((key, value) -> log.error(String.format(
-                "The following download tasks from album %s failed. The album will be deleted.: \n%s", key,
+                "The following download tasks from album %s failed. The album will be deleted.: \n\t%s", key,
                 value.stream()
                         .map(DownloadTask::getSourceUrl)
                         .collect(Collectors.joining("\n\t")))));
