@@ -62,6 +62,7 @@ public class Fmw11CurrentYearAlbumDownloadTaskProvider implements AlbumDownloadT
 
         Map<String, List<DownloadTask>> downloadTasksByAlbumName = albumsToDownload.stream()
                 .map(apunKaBollywoodClient::getDownloadableAlbum)
+                .parallel()
                 .map(downloadableAlbum -> DownloadProviderUtils.getDownloadTasksForDownloadableAlbum(downloadableAlbum, destinationPath))
                 .flatMap(Collection::stream)
                 .collect(Collectors.groupingBy(DownloadTask::getAlbumName));

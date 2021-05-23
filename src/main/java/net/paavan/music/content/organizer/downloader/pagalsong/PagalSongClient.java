@@ -30,12 +30,15 @@ public class PagalSongClient implements AlbumProviderClient {
                 .select("h3")
                 .select("a")
                 .stream()
-                .map(element -> AvailableAlbum.builder()
-                        .title(cleanTitle(element.text()))
-                        .displayTitle(String.format("%s (%d)", cleanTitle(element.text()), year))
-                        .year(year)
-                        .url(element.attr("href"))
-                        .build())
+                .map(element -> {
+                    String cleanedTitle = cleanTitle(element.text(), year);
+                    return AvailableAlbum.builder()
+                            .title(cleanedTitle)
+                            .displayTitle(String.format("%s (%d)", cleanedTitle, year))
+                            .year(year)
+                            .url(element.attr("href"))
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
@@ -82,8 +85,13 @@ public class PagalSongClient implements AlbumProviderClient {
         return null;
     }
 
-    private String cleanTitle(final String title) {
-        return title.replaceAll(" mp3 songs", "").trim();
+    private String cleanTitle(final String title, final Integer year) {
+        String cleanedTitle = title.replaceAll("mp3", "")
+                .replaceAll("songs", "")
+                .replaceAll("info", "")
+                .replaceAll(String.format("\\(%d\\)", year), "")
+                .trim();
+        return cleanedTitle;
     }
 
     private AlbumSong getDownloadUrlFromSongPage(final String songPageUrl) {

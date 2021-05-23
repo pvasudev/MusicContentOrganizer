@@ -41,9 +41,6 @@ public class PagalSongDownloadTaskProvider implements AlbumDownloadTaskProvider 
                 .filter(availableAlbum -> !existingAlbums.contains(availableAlbum.getDisplayTitle()))
                 .collect(Collectors.toList());
 
-        log.info(String.format("Found %d total albums. After removing existing albums, total is %d",
-                availableAlbums.size(), albumsToDownload.size()));
-
         if (albumsToDownload.isEmpty()) {
             log.info("No new albums");
             return Collections.emptyList();
@@ -51,6 +48,7 @@ public class PagalSongDownloadTaskProvider implements AlbumDownloadTaskProvider 
 
         Map<String, List<DownloadTask>> downloadTasksByAlbumName = albumsToDownload.stream()
                 .map(pagalSongClient::getDownloadableAlbum)
+                .parallel()
                 .map(downloadableAlbum -> DownloadProviderUtils.getDownloadTasksForDownloadableAlbum(downloadableAlbum, destinationPath))
                 .flatMap(Collection::stream)
                 .collect(Collectors.groupingBy(DownloadTask::getAlbumName));
@@ -75,7 +73,6 @@ public class PagalSongDownloadTaskProvider implements AlbumDownloadTaskProvider 
         for (int i = 1; i < 100; i++) {
             String moviesPageUrl = getMoviesPageUrl(Calendar.getInstance().get(Calendar.YEAR), i);
             List<AvailableAlbum> albumsOnPage = pagalSongClient.getAlbumsOnPage(moviesPageUrl);
-            log.info(String.format("Found %d albums on page %s", albumsOnPage.size(), moviesPageUrl));
             if (albumsOnPage.isEmpty()) {
                 break;
             }
