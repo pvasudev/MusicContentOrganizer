@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
+import net.paavan.music.content.organizer.downloader.AlbumProviderClient;
 import net.paavan.music.content.organizer.downloader.beans.AlbumSong;
 import net.paavan.music.content.organizer.downloader.beans.AvailableAlbum;
 import net.paavan.music.content.organizer.downloader.beans.DownloadableAlbum;
@@ -28,7 +29,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class ApunKaBollywoodClient implements Fmw11Client {
+public class ApunKaBollywoodClient implements AlbumProviderClient {
     private static final int MAX_RETRIES = 5;
     private static final ObjectReader LIST_S3_RESPONSE_OBJECT_READER = new ObjectMapper()
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)

@@ -1,6 +1,7 @@
 package net.paavan.music.content.organizer.downloader.fmw11;
 
 import lombok.extern.slf4j.Slf4j;
+import net.paavan.music.content.organizer.downloader.AlbumProviderClient;
 import net.paavan.music.content.organizer.downloader.beans.AlbumSong;
 import net.paavan.music.content.organizer.downloader.beans.AvailableAlbum;
 import net.paavan.music.content.organizer.downloader.beans.DownloadableAlbum;
@@ -16,7 +17,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class Fmw11OldWebpageClient implements Fmw11Client {
+public class AlbumProviderOldWebpageClient implements AlbumProviderClient {
     private static final int MAX_RETRIES = 5;
 
     @Override

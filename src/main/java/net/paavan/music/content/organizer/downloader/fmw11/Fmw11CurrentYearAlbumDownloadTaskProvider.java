@@ -35,15 +35,15 @@ public class Fmw11CurrentYearAlbumDownloadTaskProvider implements AlbumDownloadT
 
     private final String allSongsDirectory;
     private final ApunKaBollywoodClient apunKaBollywoodClient;
-    private final Fmw11OldWebpageClient fmw11OldWebpageClient;
+    private final AlbumProviderOldWebpageClient albumProviderOldWebpageClient;
 
     @Inject
     public Fmw11CurrentYearAlbumDownloadTaskProvider(@Named("all.songs.directory") final String allSongsDirectory,
                                                      final ApunKaBollywoodClient apunKaBollywoodClient,
-                                                     final Fmw11OldWebpageClient fmw11OldWebpageClient) {
+                                                     final AlbumProviderOldWebpageClient albumProviderOldWebpageClient) {
         this.allSongsDirectory = allSongsDirectory;
         this.apunKaBollywoodClient = apunKaBollywoodClient;
-        this.fmw11OldWebpageClient = fmw11OldWebpageClient;
+        this.albumProviderOldWebpageClient = albumProviderOldWebpageClient;
     }
 
     @Override
@@ -52,7 +52,7 @@ public class Fmw11CurrentYearAlbumDownloadTaskProvider implements AlbumDownloadT
                 .filter(this::isAlbumYearCurrent)
                 .collect(Collectors.toList());
 
-        List<AvailableAlbum> oldAlbums = fmw11OldWebpageClient.getAlbumsOnPage(ARCHIVE_URL).stream()
+        List<AvailableAlbum> oldAlbums = albumProviderOldWebpageClient.getAlbumsOnPage(ARCHIVE_URL).stream()
                 .filter(this::isAlbumYearCurrent)
                 .collect(Collectors.toList());
 
