@@ -15,4 +15,13 @@ public class DownloadableAlbum {
     private final String displayTitle;
     private final String url;
     private final List<AlbumSong> songs;
+
+    public static DownloadableAlbum.DownloadableAlbumBuilder buildFromAvailableAlbum(
+            final AvailableAlbum availableAlbum) {
+        return DownloadableAlbum.builder()
+                .displayTitle(availableAlbum.getDisplayTitle())
+                .title(availableAlbum.getTitle())
+                .year(availableAlbum.getYear())
+                .url(availableAlbum.getUrl());
+    }
 }

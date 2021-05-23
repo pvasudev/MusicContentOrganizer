@@ -2,13 +2,13 @@ package net.paavan.music.content.organizer;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
-import net.paavan.music.content.organizer.downloader.AlbumDownloader;
-import net.paavan.music.content.organizer.downloader.fmw11.Fmw11CurrentYearAlbumDownloader;
+import net.paavan.music.content.organizer.downloader.AlbumDownloadTaskProvider;
+import net.paavan.music.content.organizer.downloader.fmw11.Fmw11CurrentYearAlbumDownloadTaskProvider;
 
 public class DownloadModule extends AbstractModule {
     @Override
     protected void configure() {
-        Multibinder<AlbumDownloader> uriBinder = Multibinder.newSetBinder(binder(), AlbumDownloader.class);
-        uriBinder.addBinding().to(Fmw11CurrentYearAlbumDownloader.class);
+        Multibinder<AlbumDownloadTaskProvider> uriBinder = Multibinder.newSetBinder(binder(), AlbumDownloadTaskProvider.class);
+        uriBinder.addBinding().to(Fmw11CurrentYearAlbumDownloadTaskProvider.class);
     }
 }

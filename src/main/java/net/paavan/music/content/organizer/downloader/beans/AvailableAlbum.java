@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.ToString;
 
 @Getter
-@Builder(toBuilder = true)
+@Builder
 @ToString
 public class AvailableAlbum {
     private final String title;
