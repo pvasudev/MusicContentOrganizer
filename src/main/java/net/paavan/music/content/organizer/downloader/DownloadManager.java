@@ -70,6 +70,10 @@ public class DownloadManager {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
 
+        if (downloadTasks.isEmpty()) {
+            return;
+        }
+
         List<DownloadExecutionResult> results = downloadExecutor.execute(downloadTasks);
         handleErrorsIfAny(results, destinationNewSongsCollectionPath);
 
